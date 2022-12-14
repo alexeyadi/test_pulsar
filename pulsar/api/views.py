@@ -11,8 +11,3 @@ class ProductViewSet(ModelViewSet):
     filter_backends = (DjangoFilterBackend, SearchFilter)
     filterset_fields = ('status', )
     search_fields = ('title', 'model_number', )
-
-
-# class ImageViewSet(ModelViewSet):
-#     queryset = Image.objects.all()
-#     serializer_class = ImageSerializer

@@ -30,17 +30,12 @@ class Product(models.Model):
                               choices=STATUSES,
                               default=IN_STOCK,
                               max_length=25)
-    # images = models.ImageField(verbose_name='Изображение товара',
-    #                    upload_to=image_folder,
-    #                    null=True,
-    #                    blank=True)
     images = models.ForeignKey('Image',
                                verbose_name='Изображение товара',
                                related_name='products',
-                               on_delete=models.PROTECT,
+                               on_delete=models.CASCADE,
                                null=True,
                                blank=True)
-    # id = models.AutoField(primary_key=True)
 
     class Meta:
         ordering = ['title']
@@ -52,30 +47,32 @@ class Product(models.Model):
 
 
 class Image(models.Model):
-    image = models.ImageField(verbose_name='Изображение товара',
-                              upload_to='media/images/',
-                              null=True,
-                              blank=True)
-    primary_format = models.CharField(max_length=25,
-                                      null=True,
-                                      blank=True)
-    old_image = models.ImageField(verbose_name='Старое изображение товара',
-                                  upload_to='media/images/',
+    old_image = models.ImageField(verbose_name='Изображение товара',
+                                  upload_to='images/',
                                   null=True,
                                   blank=True)
+    new_image = models.ImageField(verbose_name='Изображение товара',
+                                  upload_to='images_webp/',
+                                  null=True,
+                                  blank=True)
+    old_format = models.CharField(max_length=10, null=True, blank=True)
+    new_format = models.CharField(max_length=10, null=True, blank=True)
 
-    # def save(self, *args, **kwargs):
-    #     print(self.image.file)
-    #     if self.image:
-    #         with Pillow.open(self.image.file) as img:
-    #             self.primary_format = img.format
-    #             buffer1 = BytesIO()
-                
-    #             self.old_image.file = deepcopy(self.image.file)
-    #             self.image.file = img.save(buffer1, format='WEBP')
-    #     super().save(*args, **kwargs)
+    @property
+    def formats(self):
+        return self.old_format, self.new_format
 
+    @property
+    def path(self):
+        return self.old_image.url.rpartition('.')[0]
 
-# class ImageProduct(models.Model):
-#     product = models.ForeignKey(Product, on_delete=models.CASCADE)
-#     image = models.ForeignKey(Image, on_delete=models.CASCADE)
+    def save(self, *args, **kwargs):
+        with Pillow.open(self.old_image.file) as img:
+            if img.format != 'WEBP' and img.format in ('JPG', 'PNG'):
+                buffer = BytesIO()
+                img.save(buffer, format='WEBP')
+                self.old_format = img.format
+                with Pillow.open(buffer) as new_image:
+                    self.new_format = new_image.format
+                self.new_image.file = buffer
+        super().save(*args, **kwargs)
