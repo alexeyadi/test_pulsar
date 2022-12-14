@@ -132,4 +132,4 @@ dmypy.json
 .vscode/
 
 # images
-media/images/
+pulsar/media/images/
